@@ -260,7 +260,7 @@ class Song:
                 self.parts.append(Instrument(string_list=part))
             
     
-    def write_to_file(self, path: str) -> None:
+    def to_midi(self, path: str) -> None:
         score = Score()
         path = path or (self.name + ".mid")
 
@@ -271,11 +271,8 @@ class Song:
         file.write()
         file.close()
 
-
-s = Song("../examples/ghibli_dataset/Spirited Away - Itsumo Nando Demo (2).mid")
-parts = []
-
-for part in s.parts:
-    parts.append(str(part).split(" "))
-s2 = Song(parts_as_string_list=parts, name="N")
-s2.write_to_file("test.mid")
+    def to_text(self, path: str) -> None:
+        with open(path, "w") as f:
+            for part in self.parts:
+                for measure in part.measures:
+                    f.write(str(measure) + "\n")

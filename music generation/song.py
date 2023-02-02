@@ -138,9 +138,6 @@ class Chord:
             raise Exception("Object required for chord")
         self.offset = self.notes[0].offset
 
-    def highest_pitch(self) -> Note:
-        return self.notes[-1]
-
     def music21(self) -> m21Chord:
         return m21Chord([n.music21() for n in self.notes])
 
@@ -242,24 +239,26 @@ class Instrument:
 
 
 class Song:
-    def __init__(self, path: str=None, parts_as_string_list: List[List[str]]=None, name="Song") -> None:
-        self.name: str = None
-        self.parts: List[Instrument] = []
-        self.num_notes = 0
+    def __init__(self, path: str=None) -> None:
+         self.name: str = None
+         self.parts: List[Instrument] = None
+         self.time_signature = None
+         self.num_notes = 0
 
-        if path:
-            parts = m21parse(path, forceSource=True, quantizePost=False).parts.stream()
-            
-            self.name = path[(-(path[::-1].find("/"))):-4]
-            self.parts = [Instrument(stream=part) for part in parts]
-            self.num_notes = sum([i.num_notes for i in self.parts])
-            print(f"Loaded Song: {self.name} with {len(parts)} parts and {self.num_notes} notes.")
-        elif parts_as_string_list:
-            self.name = name
-            for part in parts_as_string_list:
-                self.parts.append(Instrument(string_list=part))
-            
-    
+         try:
+             stream = m21parse(path) 
+             parts = stream.parts.stream()
+
+             self.time_signature = (stream.flat.timeSignature.numerator, stream.flat.timeSignature.denominator)
+             self.name = path[(-(path[::-1].find("/"))):-4]
+             self.parts = [Instrument(part, self.time_signature) for part in parts]
+             self.parsed = True
+             self.num_notes = sum([i.num_notes for i in self.parts])
+             print(f"Loaded Song: {self.name} with {len(parts)} parts and {self.num_notes} notes.")
+         except Exception as e:
+             print(f"Failed to load song with path: {path}, exception: {e}.")
+             self.parsed = False
+        
     def to_midi(self, path: str) -> None:
         score = Score()
         path = path or (self.name + ".mid")
@@ -276,3 +275,4 @@ class Song:
             for part in self.parts:
                 for measure in part.measures:
                     f.write(str(measure) + "\n")
+
